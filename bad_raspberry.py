@@ -14,21 +14,14 @@ import os
 # Convert frames to 1bpp monochrome bitmap at 128x64
 # Iterate over bitmap to produce RLE compressed image
 # Write final array to file 
-
+"""
 # Frame Collection
 cap = cv2.VideoCapture("./bad_apple.mp4")
 
-try:
-    if not os.path.exists("./frames"):
-        print("Frames directory does not exist, creating...")
-        os.makedirs("./frames")
-        os.makedirs("./frames/raw")
-    else:
-        print("Frames directory already exists, not creating.")
-
-except OSError:
-    print("Failed to create frames directory, exiting...")
-    exit()
+if not os.path.exists("./frames"):
+    print("Frames directory does not exist, creating...")
+    os.makedirs("./frames")
+    os.makedirs("./frames/raw")
 
 current_frame = 0
 print("Capturing frames...")
@@ -59,6 +52,7 @@ for frame in os.scandir("./frames/raw"):
         current_frame += 1
 print(f"All {current_frame} frames converted.")
 os.removedirs("./frames/raw")
+"""
 
 # Compression
 compressed_imgs = [] # MASTER ARRAY
@@ -69,20 +63,23 @@ for frame in os.scandir("./frames"):
             img_size_x, img_size_y = img.size
             img_arr = []
             prev_px = None
-            run_len = 0
-            for i in range(0, img_size_x):
-                for j in range(0,img_size_y):
-                    current_px = img.getpixel((i,j))
-                    if (i == img_size_x-1 and j == img_size_y-1) or (current_px != prev_px and prev_px != None):
-                        
-                    # prev_px
-
-            # for each pixel in image:
-                # if last pixel or (current_color not prev_color and prev_color not None):
-                    # if current_color = white:
-                        img.add(32768 + run_len)
+            run_len = 1
+            for y in range(img_size_y):
+                for x in range(img_size_x):
+                    current_px = img.getpixel((x, y))
+                    if (x == img_size_x-1 and y == img_size_y-1) or (current_px != prev_px and prev_px != None):
+                        #print(f"RUN ENDED.\nXpos: {x}, Ypos: {y}\ncur_px: {current_px}, prev_px: {prev_px}\nrun_len: {run_len}")
+                        if current_px != 0:
+                            img_arr.append(32768 + run_len)
+                        else:
+                            img_arr.append(run_len)
+                        run_len = 1
                     else:
-                        img.add(run_len)
+                        run_len += 1
+                    prev_px = current_px
+            compressed_imgs.append(img_arr)
+            print(f"runs in image: {len(img_arr)}")
+            print(f"images compressed: {len(compressed_imgs)}\n")
 
 
 """
