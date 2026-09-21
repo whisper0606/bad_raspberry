@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-uint8_t framebuf[1024];
+extern uint8_t framebuf[1024];
 
 /*
 Initializes the SSD1309 OLED display and associated GPIO.

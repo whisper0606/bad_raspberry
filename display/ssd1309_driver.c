@@ -3,8 +3,6 @@
 #include <hardware/gpio.h>
 #include <hardware/spi.h>
 
-#include <stdint.h>
-
 #define SPI_SYS spi0
 #define BAUDRATE 8000000 // SPI BAUDRATE: 8MHz
 
@@ -54,6 +52,8 @@ typedef enum {
     DEFAULT_CLK = 0x80,            // TODO: tweak value. hi nib = osc freq, lo nib = divider.
     DEFAULT_VCOMH = 0x20           // TODO: tweak value.
 } DEFAULTS;
+
+uint8_t framebuf[1024];
 
 // Abstraction of spi_write_blocking(). Writes one byte to SPI0's Tx buffer.
 void spi_write_byte(uint8_t in) {
