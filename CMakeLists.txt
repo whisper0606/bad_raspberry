@@ -35,7 +35,11 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 # List any source files to include in compilation here. 
-add_executable(bad_raspberry main.c )
+add_executable(bad_raspberry main.c 
+        display/ssd1309_driver.c
+        display/rle.c
+        frames.c
+        )
 
 pico_set_program_name(bad_raspberry "bad_raspberry")
 pico_set_program_version(bad_raspberry "0.1")
