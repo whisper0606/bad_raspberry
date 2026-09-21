@@ -119,7 +119,7 @@ with open("frames.c", "w") as f:
         else:
             f.write(f"img{i}, ")
 
-# print("Cleaning up...")
+print("Cleaning up...")
 
 for f in os.scandir("./frames"):
     os.remove(f.path)
