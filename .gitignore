@@ -1,0 +1,44 @@
+# Build output
+build/
+build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# Toolchain artefacts
+elf2uf2/
+*.elf
+*.uf2
+*.bin
+*.hex
+*.map
+*.dis
+
+# Object files
+*.o
+*.obj
+*.a
+*.lib
+
+# VSCodium
+.vscode/*
+
+# Python venv
+bad_raspberry_py/
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Misc
+.DS_Store
+Thumbs.db
+*.mp4
+*.png
+*.bmp
