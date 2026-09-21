@@ -1,6 +1,7 @@
 import cv2 
 from PIL import Image
 import os 
+import numpy as np
 
 # Frame Collection
 cap = cv2.VideoCapture("./bad_apple.mp4")
@@ -52,31 +53,50 @@ print(f"All {current_frame} frames converted.")
 os.removedirs("./frames/raw")
 
 # Encoding
+
 print("Encoding images...")
 compressed_imgs = []
+prev_img = None
+
+def add_img(leng, px):
+    if px != 0:
+        img_arr.append(32768+leng)
+    else:
+        img_arr.append(leng)
 
 for frame in sorted(os.scandir("./frames"),key=lambda n : int(n.name.replace(".bmp",""))):
+    prev_px = None
+    img_arr = []
+    run_len = 0
     if frame.is_file():
-        with Image.open(frame.path) as img:
-            img_size_x, img_size_y = img.size
-            img_arr = []
-            prev_px = None
-            run_len = 0
-            for y in range(img_size_y):
-                for x in range(img_size_x):
-                    current_px = img.getpixel((x, y))
-                    if (x == img_size_x-1 and y == img_size_y-1) or (current_px != prev_px and prev_px != None):
-                        if (x == img_size_x-1 and y == img_size_y-1):
-                            run_len += 1
-                        if prev_px != 0:
-                            img_arr.append(32768 + run_len)
-                        else:
-                            img_arr.append(run_len)
-                        run_len = 1
+        img = Image.open(frame.path)
+        img_x, img_y = img.size
+        curr_img = np.asarray(img)
+        if prev_image is not None:
+            curr_img ^= prev_img
+            curr_img = Image.fromarray(curr_image)
+        else:
+            curr_img = img 
+        for y in range(img_y):
+            for x in range(img_x):
+                curr_px = curr_img.getpixel((x,y))
+                if (curr_px != prev_px and prev_px != None):
+                    if (x == img_x-1 and y == img_y-1):
+                        add_img(run_len, prev_px)
+                        add_img(1, curr_px)
+                        run_len = 0
                     else:
-                        run_len += 1
-                    prev_px = current_px
-            compressed_imgs.append(img_arr)
+                        add_img(run_len, prev_px)
+                        run_len = 1
+                elif (x == img_x-1 and y == img_y-1):
+                    add_img(run_len+1, curr_px)
+                    run_len = 0
+                else:
+                    run_len += 1
+                prev_px = curr_px
+    compressed_imgs.append(img_arr)
+    prev_image = curr_image
+
 print("All images encoded.")
 
 # Write to file
@@ -88,7 +108,7 @@ with open("frames.c", "w") as f:
         f.write(f"const uint16_t img{frame_num}[{len(frame)+1}] = \u007b") # \u007b == {
         for run_num, run in enumerate(frame):
             if run_num == len(frame) - 1:
-                f.write(f"{run}, 0\u007d;\n") # u007d == }
+                f.write(f"{run}, 0xFFFF\u007d;\n") # u007d == }
             else:
                 f.write(f"{run}, ")
     f.write("\n")
@@ -99,7 +119,7 @@ with open("frames.c", "w") as f:
         else:
             f.write(f"img{i}, ")
 
-print("Cleaning up...")
+# print("Cleaning up...")
 
 for f in os.scandir("./frames"):
     os.remove(f.path)
