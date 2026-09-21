@@ -1,27 +1,25 @@
 import cv2 
 from PIL import Image
 import os 
-# IMPORTS
 
-# cv2 for extracting frames from video
-# pillow for image manipulation
-# os for filesystem manipulation
-
-
-# PLAN
-
-# Get frames from video as PNGs
-# Convert frames to 1bpp monochrome bitmap at 128x64
-# Iterate over bitmap to produce RLE compressed image
-# Write final array to file 
-"""
 # Frame Collection
 cap = cv2.VideoCapture("./bad_apple.mp4")
 
-if not os.path.exists("./frames"):
-    print("Frames directory does not exist, creating...")
-    os.makedirs("./frames")
-    os.makedirs("./frames/raw")
+if os.path.exists("frames.c"):
+    os.remove("frames.c")
+
+if os.path.exists("./frames/raw"):
+    for f in os.scandir("./frames/raw"):
+        os.remove(f.path)
+    os.removedirs("./frames/raw")
+
+if os.path.exists("./frames"):
+    for f in os.scandir("./frames"):
+        os.remove(f.path)
+    os.removedirs("./frames")
+
+os.makedirs("./frames")
+os.makedirs("./frames/raw")
 
 current_frame = 0
 print("Capturing frames...")
@@ -40,7 +38,7 @@ cv2.destroyAllWindows()
 # Format Conversion
 print("Converting frames...")
 current_frame = 0
-for frame in os.scandir("./frames/raw"):
+for frame in sorted(os.scandir("./frames/raw"),key=lambda n : int(n.name.replace(".png",""))):
     if frame.is_file():
         with Image.open(frame.path) as img:
             img = img.convert(mode = "1", dither = None)
@@ -52,24 +50,25 @@ for frame in os.scandir("./frames/raw"):
         current_frame += 1
 print(f"All {current_frame} frames converted.")
 os.removedirs("./frames/raw")
-"""
 
-# Compression
-compressed_imgs = [] # MASTER ARRAY
+# Encoding
+print("Encoding images...")
+compressed_imgs = []
 
-for frame in os.scandir("./frames"):
+for frame in sorted(os.scandir("./frames"),key=lambda n : int(n.name.replace(".bmp",""))):
     if frame.is_file():
         with Image.open(frame.path) as img:
             img_size_x, img_size_y = img.size
             img_arr = []
             prev_px = None
-            run_len = 1
+            run_len = 0
             for y in range(img_size_y):
                 for x in range(img_size_x):
                     current_px = img.getpixel((x, y))
                     if (x == img_size_x-1 and y == img_size_y-1) or (current_px != prev_px and prev_px != None):
-                        #print(f"RUN ENDED.\nXpos: {x}, Ypos: {y}\ncur_px: {current_px}, prev_px: {prev_px}\nrun_len: {run_len}")
-                        if current_px != 0:
+                        if (x == img_size_x-1 and y == img_size_y-1):
+                            run_len += 1
+                        if prev_px != 0:
                             img_arr.append(32768 + run_len)
                         else:
                             img_arr.append(run_len)
@@ -78,22 +77,32 @@ for frame in os.scandir("./frames"):
                         run_len += 1
                     prev_px = current_px
             compressed_imgs.append(img_arr)
-            print(f"runs in image: {len(img_arr)}")
-            print(f"images compressed: {len(compressed_imgs)}\n")
+print("All images encoded.")
 
-
-"""
-# Write to File
+# Write to file
+print("Writing frames.c...")
 with open("frames.c", "w") as f:
-    f.write("#include <stdint.h>")
+    f.write("#include <stdint.h>\n\n")
 
+    for frame_num, frame in enumerate(compressed_imgs):
+        f.write(f"const uint16_t img{frame_num}[{len(frame)+1}] = \u007b") # \u007b == {
+        for run_num, run in enumerate(frame):
+            if run_num == len(frame) - 1:
+                f.write(f"{run}, 0\u007d;\n") # u007d == }
+            else:
+                f.write(f"{run}, ")
+    f.write("\n")
+    f.write(f"const uint16_t *master[{len(compressed_imgs)}] = \u007b")
+    for i in range(len(compressed_imgs)):
+        if i == len(compressed_imgs) - 1:
+            f.write(f"img{i}\u007d;")
+        else:
+            f.write(f"img{i}, ")
 
+print("Cleaning up...")
 
-# FINAL .c FILE FORMAT:
+for f in os.scandir("./frames"):
+    os.remove(f.path)
+os.removedirs("./frames")
 
-# 1. Define image arrays containing RLE runs (uint16_t, msb color, else count).
-#     e.g. uint16_t img0[run_count] = {run_0, ... run_n, 0}; (run must have count > 0)
-
-# 2. Define master array containing pointers to image arrays
-#     e.g. uint16_t *master = {img0, img1,}
-"""
+print("All done.")
