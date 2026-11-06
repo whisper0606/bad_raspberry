@@ -22,10 +22,10 @@ void decode_img(const uint16_t *img) {
     uint16_t run = 0;
     uint16_t index = 0;
     uint8_t pixel = 0;
+    uint8_t color = ((img[0] & RUN_COLOR_MASK) >> 15);
 
     while (index < 1024) {
-        uint8_t color = ((img[run] & RUN_COLOR_MASK) >> 15); // MSB denotes color to display
-        uint16_t count = (img[run] & RUN_COUNT_MASK);        // all other bits denote pixel count
+        uint16_t count = (img[run] & RUN_COUNT_MASK);
 
         // Write until pixel == 0 || count == 0
         // if pixel == 0, we can move onto writing full u8s.
@@ -56,6 +56,7 @@ void decode_img(const uint16_t *img) {
         }
 
         run++;
+        color ^= 1;
     }
 }
 

@@ -3,7 +3,7 @@ from PIL import Image
 import os 
 import numpy as np
 
-# Frame Collection
+# Frame capture
 cap = cv2.VideoCapture("./bad_apple_24fps.mp4")
 
 if os.path.exists("frames.c"):
@@ -36,9 +36,11 @@ while True:
 cap.release()
 cv2.destroyAllWindows()
 
-# Format Conversion
+# Format conversion
 print("Converting frames...")
+
 current_frame = 0
+
 for frame in sorted(os.scandir("./frames/raw"),key=lambda n : int(n.name.replace(".png",""))):
     if frame.is_file():
         with Image.open(frame.path) as img:
@@ -47,14 +49,16 @@ for frame in sorted(os.scandir("./frames/raw"),key=lambda n : int(n.name.replace
             out = Image.new(img.mode, (128,64))
             out.paste(img, (7,0))
             out.save(f"./frames/{current_frame}.bmp")
+
         os.remove(frame.path)
         current_frame += 1
+
 print(f"All {current_frame} frames converted.")
 os.removedirs("./frames/raw")
 
 # Encoding
-
 print("Encoding images...")
+
 prev_img = None
 compressed_imgs = []
 
@@ -76,19 +80,17 @@ for frame in sorted(os.scandir("./frames"),key=lambda n : int(n.name.replace(".b
         rle = []
         count = 1
 
+        if img_dat[0] == 255:
+            count += 32768
+
         for i in range(1, len(img_dat)):
             if img_dat[i] == img_dat[i - 1]:
                 count += 1
             else:
-                if img_dat[i - 1] == 255:
-                    rle.append(32768 + count)
-                else:
-                    rle.append(count)
+                rle.append(count)
                 count = 1
-        if img_dat[-1] == 255:
-            rle.append(32768 + count)
-        else:
-            rle.append(count)
+
+        rle.append(count)
         prev_img = curr_img
 
         compressed_imgs.append(rle)
@@ -116,8 +118,8 @@ with open("frames.c", "w") as f:
 
 print("Cleaning up...")
 
-"""for f in os.scandir("./frames"):
+for f in os.scandir("./frames"):
     os.remove(f.path)
-os.removedirs("./frames")"""
+os.removedirs("./frames")
 
 print("All done.")
